@@ -1,6 +1,6 @@
 package io.quarkiverse.fluentjdbc.runtime;
 
-import static io.quarkus.runtime.annotations.ConfigPhase.RUN_TIME;
+import static io.quarkus.runtime.annotations.ConfigPhase.BUILD_AND_RUN_TIME_FIXED;
 
 import java.util.Optional;
 
@@ -10,7 +10,7 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
 
-@ConfigRoot(phase = RUN_TIME)
+@ConfigRoot(phase = BUILD_AND_RUN_TIME_FIXED)
 @ConfigMapping(prefix = "quarkus.fluentjdbc")
 public interface FluentJdbcConfig {
 

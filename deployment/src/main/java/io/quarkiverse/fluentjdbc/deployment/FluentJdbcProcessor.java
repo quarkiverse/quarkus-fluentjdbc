@@ -1,5 +1,12 @@
 package io.quarkiverse.fluentjdbc.deployment;
 
+import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
+
+import jakarta.inject.Singleton;
+
+import org.codejargon.fluentjdbc.api.FluentJdbc;
+import org.codejargon.fluentjdbc.api.ParamSetter;
+
 import io.quarkiverse.fluentjdbc.runtime.FluentJdbcConfig;
 import io.quarkiverse.fluentjdbc.runtime.FluentJdbcRecorder;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
@@ -10,11 +17,6 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
-import jakarta.inject.Singleton;
-import org.codejargon.fluentjdbc.api.FluentJdbc;
-import org.codejargon.fluentjdbc.api.ParamSetter;
-
-import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 
 public class FluentJdbcProcessor {
 

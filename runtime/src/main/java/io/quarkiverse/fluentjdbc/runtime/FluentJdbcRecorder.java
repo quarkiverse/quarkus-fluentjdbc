@@ -1,19 +1,22 @@
 package io.quarkiverse.fluentjdbc.runtime;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.InstanceHandle;
-import io.quarkus.runtime.RuntimeValue;
-import io.quarkus.runtime.annotations.Recorder;
+import java.lang.reflect.ParameterizedType;
+import java.util.stream.Collectors;
+
+import javax.sql.DataSource;
+
 import jakarta.inject.Inject;
+
 import org.codejargon.fluentjdbc.api.FluentJdbc;
 import org.codejargon.fluentjdbc.api.FluentJdbcBuilder;
 import org.codejargon.fluentjdbc.api.ParamSetter;
 import org.codejargon.fluentjdbc.api.query.SqlErrorHandler;
 import org.codejargon.fluentjdbc.api.query.listen.AfterQueryListener;
 
-import javax.sql.DataSource;
-import java.lang.reflect.ParameterizedType;
-import java.util.stream.Collectors;
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.InstanceHandle;
+import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.runtime.annotations.Recorder;
 
 @Recorder
 public class FluentJdbcRecorder {

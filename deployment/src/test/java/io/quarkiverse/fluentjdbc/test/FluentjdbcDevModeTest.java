@@ -1,8 +1,12 @@
 package io.quarkiverse.fluentjdbc.test;
 
-import io.quarkiverse.fluentjdbc.runtime.FluentJdbcConfig;
-import io.quarkus.test.QuarkusDevModeTest;
+import static org.codejargon.fluentjdbc.api.query.Transaction.Isolation.READ_COMMITTED;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+
 import jakarta.inject.Inject;
+
 import org.codejargon.fluentjdbc.api.FluentJdbc;
 import org.codejargon.fluentjdbc.api.mapper.Mappers;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -10,10 +14,8 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import static org.codejargon.fluentjdbc.api.query.Transaction.Isolation.READ_COMMITTED;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import io.quarkiverse.fluentjdbc.runtime.FluentJdbcConfig;
+import io.quarkus.test.QuarkusDevModeTest;
 
 public class FluentjdbcDevModeTest {
 

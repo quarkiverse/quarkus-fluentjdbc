@@ -1,8 +1,12 @@
-= Quarkus Fluentjdbc
+= Quarkus FluentJdbc
 
 include::./includes/attributes.adoc[]
 
-TIP: Describe what the extension does here.
+This extension integrates FluentJdbc with Quarkus by making use of Agroal as the connectionpool implementation.
+
+Furthermore it adds the following enhancements to it:
+- a `RecordMapper` class which can be used to map query results into Java Records,
+- a `JsonObjectMapper` which can be used to map queries into the `JsonObject` that comes with Quarkus.
 
 == Installation
 
@@ -19,9 +23,185 @@ For instance, with Maven, add the following dependency to your POM file:
 </dependency>
 ----
 
+== Usage
+
+Let's say we have the following entity in the database:
+[source,java,subs=attributes+]
+----
+public record Fruit(
+        int id,
+        String name,
+        String type,
+        BigDecimal calories,
+        BigDecimal carbohydrates,
+        BigDecimal fiber,
+        BigDecimal sugars,
+        BigDecimal fat,
+        BigDecimal protein
+) {
+}
+----
+
+Now you can retrieve it like this:
+
+[source,java,subs=attributes+]
+----
+import io.quarkiverse.fluentjdbc.runtime.RecordMapper;
+
+@Path("/fruits")
+public class FruitResource {
+
+    static final RecordMapper fruitMapper = new RecordMapper(Fruit.class);
+
+    @Inject
+    FluentJdbc jdbc;
+
+    @GET
+    public List<Fruit> findAll(@RestQuery @DefaultValue("0") int start, @RestQuery @Min(1) @Max(200) @DefaultValue("50") int size) {
+        return this.jdbc.query()
+                .select("select * from fruit where id > ? order by id")
+                .params(start)
+                .maxRows(size)
+                .listResult(fruitMapper);
+    }
+}
+----
+
+You can also select only the columns that are defined in the Fruit records:
+
+[source,java,subs=attributes+]
+----
+import io.quarkiverse.fluentjdbc.runtime.RecordMapper;
+
+@Path("/fruits")
+public class FruitResource {
+
+    static final RecordMapper fruitMapper = new RecordMapper(Fruit.class);
+
+    @Inject
+    FluentJdbc jdbc;
+
+    @GET
+    public List<Fruit> findAll(@RestQuery @DefaultValue("0") int start, @RestQuery @Min(1) @Max(200) @DefaultValue("50") int size) {
+        return this.jdbc.query()
+                .select("select %s from fruit where id > ? order by id".formatted(fruitMapper.columnNames()))
+                .params(start)
+                .maxRows(size)
+                .listResult(fruitMapper);
+    }
+}
+----
+
+If you don't use Java Records, but POJO's instead then you can use the `ObjectMapper` that comes with FluentJdbc:
+
+[source,java,subs=attributes+]
+----
+import org.codejargon.fluentjdbc.api.mapper.ObjectMappers;
+
+@Path("/fruits")
+public class FruitResource {
+
+    @Inject
+    ObjectMappers objectMappers;
+
+    @Inject
+    FluentJdbc jdbc;
+
+    @GET
+    public List<Fruit> findAll(@RestQuery @DefaultValue("0") int start, @RestQuery @Min(1) @Max(200) @DefaultValue("50") int size) {
+        return this.jdbc.query()
+                .select("select * from fruit where id > ? order by id")
+                .params(start)
+                .maxRows(size)
+                .listResult(this.objectMappers.forClass(MyFruit.class));
+    }
+}
+----
+
+For more examples, please look at the Git repo:
+-
+
 [[extension-configuration-reference]]
 == Extension Configuration Reference
 
-TIP: Remove this section if you don't have Quarkus configuration properties in your extension.
+This extension depends on Agroal, so that means you need to define a datasource first:
+
+[source,properties,subs=attributes+]
+----
+quarkus.datasource.devservices.port=5431
+quarkus.datasource.db-kind=postgresql
+quarkus.datasource.jdbc.url=jdbc://postgresql://localhost:5432
+quarkus.datasource.jdbc.username=username
+quarkus.datasource.jdbc.password=password
+----
+
+Dev services is supported if you only provide the `db-kind` property and leave everything else empty.
+
+Furthermore, the following configuration is available:
+
+[source,properties,subs=attributes+]
+----
+quarkus.fluentjdbc.batch-size=50 (default)
+quarkus.fluentjdbc.fetch-size=20 (default)
+quarkus.fluentjdbc.transaction-isolation=[NONE,READ_COMMITTED,READ_UNCOMMITTED,REPEATABLE_READ,SERIALIZABLE] (default is empty)
+
+----
+
+=== Configuring SqlErrorHandler, ObjectMappers, ParamSetters & AfterQueryListener
+
+The easiest way to configure these are by exposing these as CDI beans:
+
+[source,java,subs=attributes+]
+----
+
+    @Produces
+    @Singleton
+    SqlErrorHandler errorHandler() {
+        return (err, query) -> {
+            Log.errorf("Error occured while executing query: %s, state: %s, code: %s",
+                    query.orElse("no query found"),
+                    err.getSQLState(),
+                    err.getErrorCode());
+
+            if (err.getErrorCode() == 123) {
+                return SqlErrorHandler.Action.RETRY;
+            }
+
+            return null;
+        };
+    }
+
+    @Produces
+    @Singleton
+    AfterQueryListener queryListener() {
+        return execution -> {
+            if (execution.success()) {
+                Log.debugf("Query took %s ms to execute: %s",
+                        execution.executionTimeMs(),
+                        execution.sql()
+                );
+            }
+        };
+    }
+
+    @Produces
+    @Singleton
+    ObjectMappers objectMappers() {
+        return ObjectMappers.builder()
+                .extractors(Map.of(Fruit[].class, (rs, i) -> {
+                    var jsonArray = new JsonArray(rs.getString("myJsonbColumn"));
+                    return jsonArray.stream()
+                            .map(obj -> ((JsonObject) obj).mapTo(Fruit.class))
+                            .toArray(Fruit[]::new);
+                }))
+                .build();
+    }
+
+    @Produces
+    @Singleton
+    public ParamSetter<UUID> uuidParamSetter() {
+        return (uuid, prepStmt, i) -> prepStmt.setString(i, uuid.toString());
+    }
+----
 
 include::includes/quarkus-fluentjdbc.adoc[leveloffset=+1, opts=optional]
