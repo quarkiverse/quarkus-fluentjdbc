@@ -1,0 +1,68 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                   http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="1" author="sek">
+        <createTable tableName="fruit">
+            <column name="id" type="SERIAL" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(255)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="type" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="calories" type="DECIMAL(5,2)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="carbohydrates" type="DECIMAL(5,2)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="fiber" type="DECIMAL(5,2)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="sugars" type="DECIMAL(5,2)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="fat" type="DECIMAL(5,2)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="protein" type="DECIMAL(5,2)">
+                <constraints nullable="true"/>
+            </column>
+        </createTable>
+
+        <createTable tableName="farmer">
+            <column name="id" type="SERIAL" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(255)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="city" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createTable tableName="fruit_farmer">
+            <column name="farmer_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="fruit_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="amount" type="INTEGER">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addPrimaryKey columnNames="farmer_id,fruit_id" tableName="fruit_farmer" constraintName="pk_fruit_farmer"/>
+        <addForeignKeyConstraint baseColumnNames="fruit_id" baseTableName="fruit_farmer" constraintName="fk_ff_1"
+                                 referencedColumnNames="id" referencedTableName="fruit"/>
+        <addForeignKeyConstraint baseColumnNames="farmer_id" baseTableName="fruit_farmer" constraintName="fk_ff_2"
+                                 referencedColumnNames="id" referencedTableName="farmer"/>
+    </changeSet>
+</databaseChangeLog>

@@ -4,7 +4,7 @@ include::./includes/attributes.adoc[]
 
 This extension integrates FluentJdbc with Quarkus by making use of Agroal as the connectionpool implementation.
 
-Furthermore it adds the following enhancements to it:
+Furthermore, it adds the following enhancements to it:
 - a `RecordMapper` class which can be used to map query results into Java Records,
 - a `JsonObjectMapper` which can be used to map queries into the `JsonObject` that comes with Quarkus.
 
@@ -25,24 +25,21 @@ For instance, with Maven, add the following dependency to your POM file:
 
 == Usage
 
-Let's say we have the following entity in the database:
-[source,java,subs=attributes+]
+Define your datasource:
+
+[source,properties,subs=attributes+]
 ----
-public record Fruit(
-        int id,
-        String name,
-        String type,
-        BigDecimal calories,
-        BigDecimal carbohydrates,
-        BigDecimal fiber,
-        BigDecimal sugars,
-        BigDecimal fat,
-        BigDecimal protein
-) {
-}
+quarkus.datasource.db-kind=postgresql
+%prod.quarkus.datasource.jdbc.url=jdbc://postgresql://your-pg-cluster:5432
+%prod.quarkus.datasource.jdbc.username=username
+%prod.quarkus.datasource.jdbc.password=password
+
+quarkus.datasource.devservices.port=5431
 ----
 
-Now you can retrieve it like this:
+The above configuration will also start Dev services with a PosgtreSql database on port 5431.
+
+Now you can use FluentJdbc as follows:
 
 [source,java,subs=attributes+]
 ----
@@ -67,7 +64,25 @@ public class FruitResource {
 }
 ----
 
-You can also select only the columns that are defined in the Fruit records:
+Define the Fruit DTO:
+
+[source,java,subs=attributes+]
+----
+public record Fruit(
+        int id,
+        String name,
+        String type,
+        BigDecimal calories,
+        BigDecimal carbohydrates,
+        BigDecimal fiber,
+        BigDecimal sugars,
+        BigDecimal fat,
+        BigDecimal protein
+) {
+}
+----
+
+You can also select only the columns that are defined in the Fruit record:
 
 [source,java,subs=attributes+]
 ----
@@ -92,7 +107,7 @@ public class FruitResource {
 }
 ----
 
-If you don't use Java Records, but POJO's instead then you can use the `ObjectMapper` that comes with FluentJdbc:
+If you don't use Java Records, but POJO's instead then you can use the `ObjectMappers` that comes with FluentJdbc:
 
 [source,java,subs=attributes+]
 ----
@@ -108,7 +123,7 @@ public class FruitResource {
     FluentJdbc jdbc;
 
     @GET
-    public List<Fruit> findAll(@RestQuery @DefaultValue("0") int start, @RestQuery @Min(1) @Max(200) @DefaultValue("50") int size) {
+    public List<MyFruit> findAll(@RestQuery @DefaultValue("0") int start, @RestQuery @Min(1) @Max(200) @DefaultValue("50") int size) {
         return this.jdbc.query()
                 .select("select * from fruit where id > ? order by id")
                 .params(start)
@@ -124,20 +139,7 @@ For more examples, please look at the Git repo:
 [[extension-configuration-reference]]
 == Extension Configuration Reference
 
-This extension depends on Agroal, so that means you need to define a datasource first:
-
-[source,properties,subs=attributes+]
-----
-quarkus.datasource.devservices.port=5431
-quarkus.datasource.db-kind=postgresql
-quarkus.datasource.jdbc.url=jdbc://postgresql://localhost:5432
-quarkus.datasource.jdbc.username=username
-quarkus.datasource.jdbc.password=password
-----
-
-Dev services is supported if you only provide the `db-kind` property and leave everything else empty.
-
-Furthermore, the following configuration is available:
+The following configuration can be set, and all of them are optional:
 
 [source,properties,subs=attributes+]
 ----
@@ -149,14 +151,14 @@ quarkus.fluentjdbc.transaction-isolation=[NONE,READ_COMMITTED,READ_UNCOMMITTED,R
 
 === Configuring SqlErrorHandler, ObjectMappers, ParamSetters & AfterQueryListener
 
-The easiest way to configure these are by exposing these as CDI beans:
+The easiest way to configure these are by exposing them as CDI beans:
 
 [source,java,subs=attributes+]
 ----
 
     @Produces
     @Singleton
-    SqlErrorHandler errorHandler() {
+    public SqlErrorHandler errorHandler() {
         return (err, query) -> {
             Log.errorf("Error occured while executing query: %s, state: %s, code: %s",
                     query.orElse("no query found"),
@@ -173,7 +175,7 @@ The easiest way to configure these are by exposing these as CDI beans:
 
     @Produces
     @Singleton
-    AfterQueryListener queryListener() {
+    public AfterQueryListener queryListener() {
         return execution -> {
             if (execution.success()) {
                 Log.debugf("Query took %s ms to execute: %s",
@@ -186,7 +188,7 @@ The easiest way to configure these are by exposing these as CDI beans:
 
     @Produces
     @Singleton
-    ObjectMappers objectMappers() {
+    public ObjectMappers objectMappers() {
         return ObjectMappers.builder()
                 .extractors(Map.of(Fruit[].class, (rs, i) -> {
                     var jsonArray = new JsonArray(rs.getString("myJsonbColumn"));
@@ -202,6 +204,19 @@ The easiest way to configure these are by exposing these as CDI beans:
     public ParamSetter<UUID> uuidParamSetter() {
         return (uuid, prepStmt, i) -> prepStmt.setString(i, uuid.toString());
     }
+
+    @Produces
+    @Singleton
+    public ParamSetter<MyOtherType> otherParamSetter() {
+        return (other, prepStmt, i) -> prepStmt.setString(i, other.toString());
+    }
 ----
 
+-- More information:
+
+- [Official FluentJdbc Wiki](https://github.com/zsoltherpai/fluent-jdbc)
+- [More Examples](todo)
+
 include::includes/quarkus-fluentjdbc.adoc[leveloffset=+1, opts=optional]
+
+
