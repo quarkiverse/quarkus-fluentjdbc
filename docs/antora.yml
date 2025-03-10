@@ -1,0 +1,5 @@
+name: quarkus-fluentjdbc
+title: Fluentjdbc
+version: dev
+nav:
+  - modules/ROOT/nav.adoc
