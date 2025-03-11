@@ -12,6 +12,8 @@ import io.quarkiverse.fluentjdbc.runtime.JsonObjectMapper;
 import io.quarkus.logging.Log;
 import io.vertx.core.json.JsonObject;
 import jakarta.inject.Inject;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.BeanParam;
 import jakarta.ws.rs.DefaultValue;

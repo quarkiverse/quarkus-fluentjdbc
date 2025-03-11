@@ -1,21 +1,21 @@
 package io.quarkiverse.fluentjdbc.test;
 
-import static org.codejargon.fluentjdbc.api.query.Transaction.Isolation.READ_COMMITTED;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-
+import io.quarkiverse.fluentjdbc.runtime.FluentJdbcConfig;
+import io.quarkus.test.QuarkusDevModeTest;
+import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
-
 import org.codejargon.fluentjdbc.api.FluentJdbc;
 import org.codejargon.fluentjdbc.api.mapper.Mappers;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkiverse.fluentjdbc.runtime.FluentJdbcConfig;
-import io.quarkus.test.QuarkusDevModeTest;
+import static org.codejargon.fluentjdbc.api.query.Transaction.Isolation.READ_COMMITTED;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class FluentjdbcDevModeTest {
 
@@ -27,24 +27,26 @@ public class FluentjdbcDevModeTest {
                     .addClass(FluentJdbc.class));
 
     @Inject
-    FluentJdbc jdbc;
+    Instance<FluentJdbc> jdbc;
 
     @Inject
-    FluentJdbcConfig config;
+    Instance<FluentJdbcConfig> config;
 
     @Test
+    @Order(1)
     void notNull() {
-        assertNotNull(this.jdbc);
-        assertNotNull(this.config);
+        assertNotNull(this.jdbc.get());
+        assertNotNull(this.config.get());
 
-        assertEquals(100, this.config.batchSize());
-        assertEquals(50, this.config.fetchSize());
-        assertNull(this.config.transactionIsolation());
+        assertEquals(100, this.config.get().batchSize());
+        assertEquals(50, this.config.get().fetchSize());
+        assertNull(this.config.get().transactionIsolation());
     }
 
     @Test
+    @Order(2)
     public void writeYourOwnDevModeTest() {
-        this.jdbc.query().plainConnection(con -> {
+        this.jdbc.get().query().plainConnection(con -> {
             try (var stmt = con.createStatement()) {
                 return stmt.execute("""
                             CREATE TABLE fruit (
@@ -56,12 +58,12 @@ public class FluentjdbcDevModeTest {
             }
         });
 
-        this.jdbc.query()
+        this.jdbc.get().query()
                 .update("insert into fruit(name, type) values(?,?)")
                 .params("golden roger", "apple")
                 .run();
 
-        var count = this.jdbc.query().select("select count(*) from fruit").singleResult(Mappers.singleLong());
+        var count = this.jdbc.get().query().select("select count(*) from fruit").singleResult(Mappers.singleLong());
         assertEquals(1L, count);
 
         // restart app, then the data should still stay in the db
@@ -72,10 +74,10 @@ public class FluentjdbcDevModeTest {
                 """;
         devModeTest.modifyResourceFile("application.properties", content -> content.concat(updateAppProperties));
 
-        count = this.jdbc.query().select("select count(*) from fruit").singleResult(Mappers.singleLong());
+        count = this.jdbc.get().query().select("select count(*) from fruit").singleResult(Mappers.singleLong());
         assertEquals(1L, count);
-        assertEquals(10, this.config.batchSize());
-        assertEquals(1, this.config.fetchSize());
-        assertEquals(READ_COMMITTED, this.config.transactionIsolation());
+        assertEquals(10, this.config.get().batchSize());
+        assertEquals(1, this.config.get().fetchSize());
+        assertEquals(READ_COMMITTED, this.config.get().transactionIsolation());
     }
 }

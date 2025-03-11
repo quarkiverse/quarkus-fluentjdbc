@@ -1,32 +1,26 @@
 package io.quarkiverse.fluentjdbc.runtime;
 
-import java.lang.reflect.ParameterizedType;
-import java.util.stream.Collectors;
-
-import javax.sql.DataSource;
-
-import jakarta.inject.Inject;
-
-import org.codejargon.fluentjdbc.api.FluentJdbc;
-import org.codejargon.fluentjdbc.api.FluentJdbcBuilder;
-import org.codejargon.fluentjdbc.api.ParamSetter;
-import org.codejargon.fluentjdbc.api.query.SqlErrorHandler;
-import org.codejargon.fluentjdbc.api.query.listen.AfterQueryListener;
-
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
+import io.smallrye.config.SmallRyeConfig;
+import org.codejargon.fluentjdbc.api.FluentJdbc;
+import org.codejargon.fluentjdbc.api.FluentJdbcBuilder;
+import org.codejargon.fluentjdbc.api.ParamSetter;
+import org.codejargon.fluentjdbc.api.query.SqlErrorHandler;
+import org.codejargon.fluentjdbc.api.query.Transaction.Isolation;
+import org.codejargon.fluentjdbc.api.query.listen.AfterQueryListener;
+import org.eclipse.microprofile.config.ConfigProvider;
+
+import javax.sql.DataSource;
+import java.lang.reflect.ParameterizedType;
+import java.util.stream.Collectors;
 
 @Recorder
 public class FluentJdbcRecorder {
 
-    FluentJdbcConfig config;
-
-    @Inject
-    public FluentJdbcRecorder(FluentJdbcConfig config) {
-        this.config = config;
-    }
+    static final String CONFIG_PREFIX = "quarkus.fluentjdbc.";
 
     public RuntimeValue<FluentJdbc> createFluentJdbc() {
         var dataSource = Arc.container().instance(DataSource.class);
@@ -42,13 +36,15 @@ public class FluentJdbcRecorder {
             throw new IllegalStateException("No datasource was configured");
         }
 
-        System.out.println("config values: fetch: " + this.config.fetchSize());
+        var config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
         var builder = new FluentJdbcBuilder().connectionProvider(dataSource.get());
-        builder.defaultFetchSize(this.config.fetchSize());
-        builder.defaultBatchSize(this.config.batchSize());
 
-        if (this.config.transactionIsolation().isPresent()) {
-            builder.defaultTransactionIsolation(this.config.transactionIsolation().get());
+        builder.defaultFetchSize(config.getValue(CONFIG_PREFIX + "fetch-size", Integer.class));
+        builder.defaultBatchSize(config.getValue(CONFIG_PREFIX + "batch-size", Integer.class));
+
+        var txIsolation = config.getOptionalValue(CONFIG_PREFIX + "transaction-isolation", Isolation.class);
+        if (txIsolation.isPresent()) {
+            builder.defaultTransactionIsolation(txIsolation.get());
         }
 
         if (sqlErrorHandler.isAvailable()) {

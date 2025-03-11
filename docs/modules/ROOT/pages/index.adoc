@@ -189,14 +189,7 @@ The easiest way to configure these are by exposing them as CDI beans:
     @Produces
     @Singleton
     public ObjectMappers objectMappers() {
-        return ObjectMappers.builder()
-                .extractors(Map.of(Fruit[].class, (rs, i) -> {
-                    var jsonArray = new JsonArray(rs.getString("myJsonbColumn"));
-                    return jsonArray.stream()
-                            .map(obj -> ((JsonObject) obj).mapTo(Fruit.class))
-                            .toArray(Fruit[]::new);
-                }))
-                .build();
+        return ObjectMappers.builder().build();
     }
 
     @Produces
@@ -215,7 +208,7 @@ The easiest way to configure these are by exposing them as CDI beans:
 -- More information:
 
 - [Official FluentJdbc Wiki](https://github.com/zsoltherpai/fluent-jdbc)
-- [More Examples](todo)
+- [More Examples](../../../../examples)
 
 include::includes/quarkus-fluentjdbc.adoc[leveloffset=+1, opts=optional]
 
