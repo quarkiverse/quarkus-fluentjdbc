@@ -2,7 +2,6 @@ package io.quarkiverse.fluentjdbc.test;
 
 import io.quarkiverse.fluentjdbc.runtime.FluentJdbcConfig;
 import io.quarkus.test.QuarkusDevModeTest;
-import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import org.codejargon.fluentjdbc.api.FluentJdbc;
 import org.codejargon.fluentjdbc.api.mapper.Mappers;
@@ -22,31 +21,29 @@ public class FluentjdbcDevModeTest {
     @RegisterExtension
     static final QuarkusDevModeTest devModeTest = new QuarkusDevModeTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addAsResource("application.properties")
-                    .addClass(FluentJdbcConfig.class)
-                    .addClass(FluentJdbc.class));
+                    .addAsResource("application.properties"));
 
     @Inject
-    Instance<FluentJdbc> jdbc;
+    FluentJdbc jdbc;
 
     @Inject
-    Instance<FluentJdbcConfig> config;
+    FluentJdbcConfig config;
 
     @Test
     @Order(1)
     void notNull() {
-        assertNotNull(this.jdbc.get());
-        assertNotNull(this.config.get());
+        assertNotNull(this.jdbc);
+        assertNotNull(this.config);
 
-        assertEquals(100, this.config.get().batchSize());
-        assertEquals(50, this.config.get().fetchSize());
-        assertNull(this.config.get().transactionIsolation());
+        assertEquals(100, this.config.batchSize());
+        assertEquals(50, this.config.fetchSize());
+        assertNull(this.config.transactionIsolation());
     }
 
     @Test
     @Order(2)
     public void writeYourOwnDevModeTest() {
-        this.jdbc.get().query().plainConnection(con -> {
+        this.jdbc.query().plainConnection(con -> {
             try (var stmt = con.createStatement()) {
                 return stmt.execute("""
                             CREATE TABLE fruit (
@@ -58,12 +55,12 @@ public class FluentjdbcDevModeTest {
             }
         });
 
-        this.jdbc.get().query()
+        this.jdbc.query()
                 .update("insert into fruit(name, type) values(?,?)")
                 .params("golden roger", "apple")
                 .run();
 
-        var count = this.jdbc.get().query().select("select count(*) from fruit").singleResult(Mappers.singleLong());
+        var count = this.jdbc.query().select("select count(*) from fruit").singleResult(Mappers.singleLong());
         assertEquals(1L, count);
 
         // restart app, then the data should still stay in the db
@@ -74,10 +71,10 @@ public class FluentjdbcDevModeTest {
                 """;
         devModeTest.modifyResourceFile("application.properties", content -> content.concat(updateAppProperties));
 
-        count = this.jdbc.get().query().select("select count(*) from fruit").singleResult(Mappers.singleLong());
+        count = this.jdbc.query().select("select count(*) from fruit").singleResult(Mappers.singleLong());
         assertEquals(1L, count);
-        assertEquals(10, this.config.get().batchSize());
-        assertEquals(1, this.config.get().fetchSize());
-        assertEquals(READ_COMMITTED, this.config.get().transactionIsolation());
+        assertEquals(10, this.config.batchSize());
+        assertEquals(1, this.config.fetchSize());
+        assertEquals(READ_COMMITTED, this.config.transactionIsolation());
     }
 }

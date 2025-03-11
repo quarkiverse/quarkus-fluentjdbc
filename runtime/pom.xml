@@ -29,7 +29,6 @@
             <groupId>org.codejargon</groupId>
             <artifactId>fluentjdbc</artifactId>
             <version>1.8.3</version>
-            <scope>compile</scope>
         </dependency>
     </dependencies>
 

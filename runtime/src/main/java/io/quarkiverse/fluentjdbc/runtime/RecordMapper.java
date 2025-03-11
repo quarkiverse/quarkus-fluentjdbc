@@ -1,5 +1,8 @@
 package io.quarkiverse.fluentjdbc.runtime;
 
+import io.quarkus.runtime.annotations.RegisterForReflection;
+import org.codejargon.fluentjdbc.api.query.Mapper;
+
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Parameter;
@@ -9,17 +12,13 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.stream.Collectors;
 
-import org.codejargon.fluentjdbc.api.query.Mapper;
-
-import io.quarkus.runtime.annotations.RegisterForReflection;
-
 /**
  * A Java Record mapper for FluentJdbc.
  * <p>
  * Usage:
  * <blockquote>
  * <code>
- * static final RecordMapper fruitMapper = new RecordMapper(Fruits.class);
+ * static final RecordMapper fruitMapper = new RecordMapper(Fruit.class);
  * <p>
  * // select all columns<br/>
  * List&lt;Fruit&gt; fruits = query().select("select * from fruit").listMapper(fruitMapper);

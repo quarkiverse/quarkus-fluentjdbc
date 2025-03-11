@@ -1,15 +1,15 @@
 package io.quarkiverse.fluentjdbc.runtime;
 
+import io.quarkus.runtime.annotations.RegisterForReflection;
+import io.vertx.core.json.JsonObject;
+import jakarta.inject.Singleton;
+import org.codejargon.fluentjdbc.api.query.Mapper;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-import jakarta.inject.Singleton;
-
-import org.codejargon.fluentjdbc.api.query.Mapper;
-
-import io.vertx.core.json.JsonObject;
-
 @Singleton
+@RegisterForReflection
 public class JsonObjectMapper implements Mapper<JsonObject> {
 
     @Override
