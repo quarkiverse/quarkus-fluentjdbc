@@ -1,8 +1,5 @@
 package io.quarkiverse.fluentjdbc.runtime;
 
-import io.quarkus.runtime.annotations.RegisterForReflection;
-import org.codejargon.fluentjdbc.api.query.Mapper;
-
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Parameter;
@@ -11,6 +8,10 @@ import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.stream.Collectors;
+
+import org.codejargon.fluentjdbc.api.query.Mapper;
+
+import io.quarkus.runtime.annotations.RegisterForReflection;
 
 /**
  * A Java Record mapper for FluentJdbc.
@@ -41,6 +42,7 @@ public class RecordMapper<T extends Record> implements Mapper<T> {
         if (!type.isRecord()) {
             throw new IllegalArgumentException("Class %s is not a Record".formatted(type));
         }
+
         this.constructor = findConstructor(type);
         this.columnNames = columnNamesOfRecord();
     }

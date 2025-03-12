@@ -22,6 +22,7 @@ public class FluentJdbcConfig {
 
     @Produces
     @Singleton
+    @Unremovable
     SqlErrorHandler errorHandler() {
         return (err, query) -> {
             if (err.getErrorCode() == 123) {
@@ -38,6 +39,7 @@ public class FluentJdbcConfig {
 
     @Produces
     @Singleton
+    @Unremovable
     AfterQueryListener queryListener() {
         return execution -> {
             if (execution.success()) {
@@ -51,13 +53,14 @@ public class FluentJdbcConfig {
 
     @Produces
     @Singleton
-    ObjectMappers objectMappers() {
-        return ObjectMappers.builder().build();
+    @Unremovable
+    ParamSetter<UUID> uuidParamSetter() {
+        return (uuid, prepStmt, i) -> prepStmt.setString(i, uuid.toString());
     }
 
     @Produces
     @Singleton
-    public ParamSetter<UUID> uuidParamSetter() {
-        return (uuid, prepStmt, i) -> prepStmt.setString(i, uuid.toString());
+    ObjectMappers objectMappers() {
+        return ObjectMappers.builder().build();
     }
 }

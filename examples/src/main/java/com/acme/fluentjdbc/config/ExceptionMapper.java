@@ -3,6 +3,7 @@ package com.acme.fluentjdbc.config;
 import io.quarkus.logging.Log;
 import io.quarkus.security.AuthenticationFailedException;
 import jakarta.ws.rs.WebApplicationException;
+import org.codejargon.fluentjdbc.api.FluentJdbcException;
 import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
 
@@ -19,7 +20,7 @@ public class ExceptionMapper {
     public RestResponse<Map<String, String>> toResponse(WebApplicationException e) {
         var message = Objects.requireNonNullElse(e.getMessage(), getMessage(e));
         var status = Objects.requireNonNullElse(e.getResponse().getStatusInfo(), BAD_REQUEST);
-        Log.errorf(message);
+        Log.error(message);
 
         return RestResponse.status(status, Map.of(
                 "message", message,
@@ -30,7 +31,24 @@ public class ExceptionMapper {
     @ServerExceptionMapper
     public RestResponse<Map<String, String>> toResponse(Exception e) {
         var message = Objects.requireNonNullElse(e.getMessage(), getMessage(e));
-        Log.errorf(message);
+        Log.error(message);
+        return RestResponse.status(INTERNAL_SERVER_ERROR, Map.of(
+                "message", message,
+                "exception", e.getClass().getName()
+        ));
+    }
+
+    @ServerExceptionMapper
+    public RestResponse<Map<String, String>> toResponse(FluentJdbcException e) {
+        var expMsg = e.getMessage();
+        var causeMsg = getMessage(e);
+
+        var message = "%s, %s".formatted(expMsg, causeMsg);
+        if (expMsg.startsWith("Error running query")) {
+            message = causeMsg;
+        }
+
+        Log.error(message);
         return RestResponse.status(INTERNAL_SERVER_ERROR, Map.of(
                 "message", message,
                 "exception", e.getClass().getName()
@@ -56,3 +74,4 @@ public class ExceptionMapper {
         return result;
     }
 }
+

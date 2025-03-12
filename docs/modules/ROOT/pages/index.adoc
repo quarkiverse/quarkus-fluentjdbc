@@ -5,6 +5,7 @@ include::./includes/attributes.adoc[]
 This extension integrates FluentJdbc with Quarkus by making use of Agroal as the connectionpool implementation.
 
 Furthermore, it adds the following enhancements to it:
+
 - a `RecordMapper` class which can be used to map query results into Java Records,
 - a `JsonObjectMapper` which can be used to map queries into the `JsonObject` that comes with Quarkus.
 
@@ -133,21 +134,13 @@ public class FruitResource {
 }
 ----
 
-For more examples, please look at the Git repo:
+For more examples, see links below.
 -
 
 [[extension-configuration-reference]]
 == Extension Configuration Reference
 
-The following configuration can be set, and all of them are optional:
-
-[source,properties,subs=attributes+]
-----
-quarkus.fluentjdbc.batch-size=50 (default)
-quarkus.fluentjdbc.fetch-size=20 (default)
-quarkus.fluentjdbc.transaction-isolation=[NONE,READ_COMMITTED,READ_UNCOMMITTED,REPEATABLE_READ,SERIALIZABLE] (default is empty)
-
-----
+include::includes/quarkus-fluentjdbc.adoc[leveloffset=+1, opts=optional]
 
 === Configuring SqlErrorHandler, ObjectMappers, ParamSetters & AfterQueryListener
 
@@ -158,6 +151,7 @@ The easiest way to configure these are by exposing them as CDI beans:
 
     @Produces
     @Singleton
+    @Unremovable
     public SqlErrorHandler errorHandler() {
         return (err, query) -> {
             Log.errorf("Error occured while executing query: %s, state: %s, code: %s",
@@ -168,13 +162,13 @@ The easiest way to configure these are by exposing them as CDI beans:
             if (err.getErrorCode() == 123) {
                 return SqlErrorHandler.Action.RETRY;
             }
-
-            return null;
+            throw err;
         };
     }
 
     @Produces
     @Singleton
+    @Unremovable
     public AfterQueryListener queryListener() {
         return execution -> {
             if (execution.success()) {
@@ -194,12 +188,14 @@ The easiest way to configure these are by exposing them as CDI beans:
 
     @Produces
     @Singleton
+    @Unremovable
     public ParamSetter<UUID> uuidParamSetter() {
         return (uuid, prepStmt, i) -> prepStmt.setString(i, uuid.toString());
     }
 
     @Produces
     @Singleton
+    @Unremovable
     public ParamSetter<MyOtherType> otherParamSetter() {
         return (other, prepStmt, i) -> prepStmt.setString(i, other.toString());
     }
@@ -207,9 +203,6 @@ The easiest way to configure these are by exposing them as CDI beans:
 
 -- More information:
 
-- [Official FluentJdbc Wiki](https://github.com/zsoltherpai/fluent-jdbc)
-- [More Examples](../../../../examples)
-
-include::includes/quarkus-fluentjdbc.adoc[leveloffset=+1, opts=optional]
-
+- [Official FluentJdbc documenation](https://zsoltherpai.github.io/fluent-jdbc)
+- [More Examples](https://github.com/Serkan80/quarkus-fluentjdbc-extension/tree/master/examples)
 

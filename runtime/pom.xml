@@ -9,14 +9,10 @@
         <version>999-SNAPSHOT</version>
     </parent>
     <artifactId>quarkus-fluentjdbc</artifactId>
-    <name>Quarkus Fluentjdbc - Runtime</name>
+    <name>Quarkus FluentJdbc - Runtime</name>
     <description>A fluent API around JDBC for querying databases</description>
 
     <dependencies>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-arc</artifactId>
-        </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-vertx</artifactId>

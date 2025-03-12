@@ -1,0 +1,74 @@
+[.configuration-legend]
+icon:lock[title=Fixed at build time] Configuration property fixed at build time - All other configuration properties are overridable at runtime
+[.configuration-reference.searchable, cols="80,.^10,.^10"]
+|===
+
+h|[.header-title]##Configuration property##
+h|Type
+h|Default
+
+a|icon:lock[title=Fixed at build time] [[quarkus-fluentjdbc_quarkus-fluentjdbc-transaction-isolation]] [.property-path]##link:#quarkus-fluentjdbc_quarkus-fluentjdbc-transaction-isolation[`quarkus.fluentjdbc.transaction-isolation`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.fluentjdbc.transaction-isolation+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+the default transaction isolation level.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLUENTJDBC_TRANSACTION_ISOLATION+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLUENTJDBC_TRANSACTION_ISOLATION+++`
+endif::add-copy-button-to-env-var[]
+--
+a|`none`, `read-committed`, `read-uncommitted`, `repeatable-read`, `serializable`
+|
+
+a|icon:lock[title=Fixed at build time] [[quarkus-fluentjdbc_quarkus-fluentjdbc-batch-size]] [.property-path]##link:#quarkus-fluentjdbc_quarkus-fluentjdbc-batch-size[`quarkus.fluentjdbc.batch-size`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.fluentjdbc.batch-size+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+The default batch size for batch queries. Default is 50.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLUENTJDBC_BATCH_SIZE+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLUENTJDBC_BATCH_SIZE+++`
+endif::add-copy-button-to-env-var[]
+--
+|int
+|`50`
+
+a|icon:lock[title=Fixed at build time] [[quarkus-fluentjdbc_quarkus-fluentjdbc-fetch-size]] [.property-path]##link:#quarkus-fluentjdbc_quarkus-fluentjdbc-fetch-size[`quarkus.fluentjdbc.fetch-size`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.fluentjdbc.fetch-size+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+The default fetch size for queries. Default is 20.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLUENTJDBC_FETCH_SIZE+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLUENTJDBC_FETCH_SIZE+++`
+endif::add-copy-button-to-env-var[]
+--
+|int
+|`20`
+
+|===
+

@@ -11,7 +11,7 @@
     <artifactId>quarkus-fluentjdbc-parent</artifactId>
     <version>999-SNAPSHOT</version>
     <packaging>pom</packaging>
-    <name>Quarkus Fluentjdbc - Parent</name>
+    <name>Quarkus FluentJdbc - Parent</name>
 
     <modules>
         <module>deployment</module>

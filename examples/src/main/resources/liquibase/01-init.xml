@@ -4,10 +4,13 @@
                    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
                    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
 
-    <changeSet id="1" author="sek">
+    <changeSet id="1" author="quarkus">
         <createTable tableName="fruit">
             <column name="id" type="SERIAL" autoIncrement="true">
                 <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="ext_id" type="UUID">
+                <constraints nullable="false" unique="true"/>
             </column>
             <column name="name" type="VARCHAR(255)">
                 <constraints nullable="false" unique="true"/>

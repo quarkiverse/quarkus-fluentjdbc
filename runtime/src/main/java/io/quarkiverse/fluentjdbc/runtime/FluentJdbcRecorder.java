@@ -1,10 +1,14 @@
 package io.quarkiverse.fluentjdbc.runtime;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.InstanceHandle;
-import io.quarkus.runtime.RuntimeValue;
-import io.quarkus.runtime.annotations.Recorder;
-import io.smallrye.config.SmallRyeConfig;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.util.Iterator;
+import java.util.stream.Collectors;
+
+import javax.sql.DataSource;
+
+import jakarta.enterprise.util.TypeLiteral;
+
 import org.codejargon.fluentjdbc.api.FluentJdbc;
 import org.codejargon.fluentjdbc.api.FluentJdbcBuilder;
 import org.codejargon.fluentjdbc.api.ParamSetter;
@@ -13,9 +17,11 @@ import org.codejargon.fluentjdbc.api.query.Transaction.Isolation;
 import org.codejargon.fluentjdbc.api.query.listen.AfterQueryListener;
 import org.eclipse.microprofile.config.ConfigProvider;
 
-import javax.sql.DataSource;
-import java.lang.reflect.ParameterizedType;
-import java.util.stream.Collectors;
+import io.quarkus.arc.Arc;
+import io.quarkus.logging.Log;
+import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.runtime.annotations.Recorder;
+import io.smallrye.config.SmallRyeConfig;
 
 @Recorder
 public class FluentJdbcRecorder {
@@ -26,11 +32,11 @@ public class FluentJdbcRecorder {
         var dataSource = Arc.container().instance(DataSource.class);
         var sqlErrorHandler = Arc.container().instance(SqlErrorHandler.class);
         var afterQueryListener = Arc.container().instance(AfterQueryListener.class);
-        var paramSetters = Arc.container().select(ParamSetter.class).handlesStream()
-                .map(InstanceHandle::get)
+        var paramSetters = Arc.container().select(new TypeLiteral<ParamSetter<?>>() {
+        }).handlesStream()
                 .collect(Collectors.toMap(
-                        this::getParamSetterType,
-                        paramSetter -> paramSetter));
+                        param -> paramType(param.getBean().getTypes().iterator()),
+                        param -> (ParamSetter) param.get()));
 
         if (!dataSource.isAvailable()) {
             throw new IllegalStateException("No datasource was configured");
@@ -44,33 +50,44 @@ public class FluentJdbcRecorder {
 
         var txIsolation = config.getOptionalValue(CONFIG_PREFIX + "transaction-isolation", Isolation.class);
         if (txIsolation.isPresent()) {
+            Log.infof("FluentJdbc - setting default transaction isolation: %s", txIsolation.get());
             builder.defaultTransactionIsolation(txIsolation.get());
         }
 
         if (sqlErrorHandler.isAvailable()) {
+            Log.info("FluentJdbc - setting default SqlErrorHandler");
             builder.defaultSqlHandler(() -> sqlErrorHandler.get());
         }
 
         if (afterQueryListener.isAvailable()) {
+            Log.info("FluentJdbc - setting default AfterQueryListener");
             builder.afterQueryListener(afterQueryListener.get());
         }
 
         if (!paramSetters.isEmpty()) {
+            Log.infof("FluentJdbc - setting ParamSetters for type(s): %s", paramSetters.keySet());
             builder.paramSetters(paramSetters);
         }
 
         return new RuntimeValue<>(builder.build());
     }
 
-    private Class getParamSetterType(ParamSetter<?> paramSetter) {
-        var superClass = paramSetter.getClass().getGenericInterfaces()[0];
+    private static Class paramType(Iterator<Type> types) {
+        while (types.hasNext()) {
+            Type type = types.next();
 
-        if (superClass instanceof ParameterizedType) {
-            var typeArgument = ((ParameterizedType) superClass).getActualTypeArguments()[0];
-            if (typeArgument instanceof Class<?>) {
-                return (Class) typeArgument;
+            if (type instanceof ParameterizedType pt) {
+                Type rawType = pt.getRawType();
+
+                if (rawType instanceof Class<?> clazz && clazz.equals(ParamSetter.class)) {
+                    Type typeArgument = pt.getActualTypeArguments()[0];
+
+                    if (typeArgument instanceof Class<?> result) {
+                        return result;
+                    }
+                }
             }
         }
-        throw new IllegalStateException("Unable to determine generic type for ParamSetter: " + paramSetter.getClass());
+        throw new IllegalArgumentException("Could not determine parameter type for ParamSetter.");
     }
 }

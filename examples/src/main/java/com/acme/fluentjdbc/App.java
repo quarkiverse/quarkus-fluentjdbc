@@ -12,7 +12,7 @@ public class App {
     }
 
     public static class Queries {
-        public static final String INSERT_FRUIT = "insert into fruit(name,type,calories,carbohydrates,fiber,sugars,fat,protein) values(?,?,?,?,?,?,?,?)";
+        public static final String INSERT_FRUIT = "insert into fruit(ext_id,name,type,calories,carbohydrates,fiber,sugars,fat,protein) values(?,?,?,?,?,?,?,?,?)";
         public static final String INSERT_FARMER = "insert into farmer(name, city) values(?, ?)";
         public static final String INSERT_FRUIT_FARMER = "insert into fruit_farmer(farmer_id, fruit_id, amount) values(?,?,?)";
 

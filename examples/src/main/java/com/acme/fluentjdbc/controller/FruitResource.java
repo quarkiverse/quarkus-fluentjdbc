@@ -61,8 +61,8 @@ public class FruitResource {
     public RestResponse<Void> save(@Valid FruitPOST fruit, @Context UriInfo uriInfo) {
         var id = this.jdbc.query()
                 .update(App.Queries.INSERT_FRUIT)
-//                .params(fruit.name(), fruit.type(), fruit.calories(), fruit.carbohydrates(), fruit.fiber(), fruit.sugars(), fruit.fat(), fruit.protein())
-                .params(paramsFromDto(fruit))
+//                .params(UUID.randomUUID(), fruit.name(), fruit.type(), fruit.calories(), fruit.carbohydrates(), fruit.fiber(), fruit.sugars(), fruit.fat(), fruit.protein())
+                .params(paramsFromDto(fruit, UUID.randomUUID()))
                 .runFetchGenKeys(Mappers.singleLong())
                 .firstKey();
 
@@ -239,10 +239,14 @@ public class FruitResource {
         ).toArray();
     }
 
-    private static List<Object> paramsFromDto(Object obj) {
+    private static List<Object> paramsFromDto(Object dto, Object... otherParams) {
+        var result = new ArrayList();
+        Collections.addAll(result, otherParams);
+
         // shorthand for getting all params, handy if you have a large object
-        // unfortunately jsonObject.toMap().values() doesn't work
-        return JsonObject.mapFrom(obj).stream().map(Map.Entry::getValue).toList();
+        var dtoParams = JsonObject.mapFrom(dto).stream().map(Map.Entry::getValue).toList();
+        result.addAll(dtoParams);
+        return result;
     }
 
     public record Statement(String stmt, Object... values) {
