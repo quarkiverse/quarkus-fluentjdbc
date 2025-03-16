@@ -65,12 +65,17 @@ public class FruitResource {
 }
 ----
 
+The `RecordMapper` maps `ResultSets` into Java Records. It will also automatically map the database column name into camel case in Java.
+
+So if you have "external_id" in the database, this will be automatically mapped to "externalId".
+
 Define the Fruit DTO:
 
 [source,java,subs=attributes+]
 ----
 public record Fruit(
         int id,
+        UUID externalId,
         String name,
         String type,
         BigDecimal calories,
@@ -133,6 +138,61 @@ public class FruitResource {
     }
 }
 ----
+
+Note: you need to create a producer (`@Produce`) for the `ObjectMappers`.
+
+=== Dynamic Queries
+
+If you need to create dynamic queries where certain parameters can be empty, then you use `DynamicQuery` as follows:
+
+```java
+    @GET
+    @Path("/search")
+    public List<Fruit> search(@BeanParam @Valid SearchCriteria criteria) {
+        var queryResult = new DynamicQuery()
+                .selectClauses(
+                        "lower(name) = lower(?)",
+                        "lower(type) = lower(?)",
+                        "calories",
+                        "carbohydrates"
+                )
+                .paramsFromDto(criteria)
+                .build();
+
+        return this.jdbc.query()
+                .select("select * from fruit %s order by id".formatted(queryResult.query()))
+                .params(queryResult.parameters())
+                .listResult(fruitMapper);
+    }
+```
+
+`calories` and `carbohydrates` is a shorthand for: `calories = :calories` and `carbohydrates = :carbohydrates` respectively.
+
+You can also use it to create dynamic update statements:
+
+```java
+    @PUT
+    @Path("/{id}")
+    public RestResponse<Void> update(@RestPath @Min(1) Long id, @Valid FruitPUT fruit) {
+        var queryResult = new DynamicQuery()
+                .updateClauses("name", "type", "calories", "carbohydrates", "fiber", "sugars", "fat", "protein")
+                .where("id")
+                .paramsFromDto(fruit, id)
+                .build();
+
+        var count = this.jdbc.query()
+                .update("update fruit %s".formatted(queryResult.query()))
+                .params(queryResult.parameters())
+                .run()
+                .affectedRows();
+
+        if (count > 0) {
+            Log.infof("%d fruits updated", count);
+        }
+
+        return RestResponse.ok();
+    }
+```
 
 For more examples, see links below.
 -

@@ -8,13 +8,15 @@ import com.acme.fluentjdbc.controller.dto.Fruit;
 import com.acme.fluentjdbc.controller.dto.FruitPOST;
 import com.acme.fluentjdbc.controller.dto.FruitPUT;
 import com.acme.fluentjdbc.controller.dto.SearchCriteria;
+import io.quarkiverse.fluentjdbc.runtime.DynamicQuery;
 import io.quarkiverse.fluentjdbc.runtime.JsonObjectMapper;
 import io.quarkus.logging.Log;
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import jakarta.inject.Inject;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
-import jakarta.validation.Valid;
 import jakarta.ws.rs.BeanParam;
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
@@ -29,23 +31,27 @@ import jakarta.ws.rs.core.StreamingOutput;
 import jakarta.ws.rs.core.UriInfo;
 import org.codejargon.fluentjdbc.api.FluentJdbc;
 import org.codejargon.fluentjdbc.api.mapper.Mappers;
+import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.media.Content;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
+import org.jboss.resteasy.reactive.RestPath;
 import org.jboss.resteasy.reactive.RestQuery;
 import org.jboss.resteasy.reactive.RestResponse;
 import org.postgresql.copy.CopyManager;
 import org.postgresql.jdbc.PgConnection;
 
 import java.io.IOException;
+import java.sql.SQLException;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.Arrays;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.UUID;
 
+import static com.acme.fluentjdbc.App.Mappers.fruitMapper;
 import static com.acme.fluentjdbc.controller.dto.SearchCriteria.Operator.EQ;
 import static jakarta.ws.rs.core.HttpHeaders.CONTENT_DISPOSITION;
+import static org.eclipse.microprofile.openapi.annotations.enums.SchemaType.STRING;
 
 
 @Path("/fruits")
@@ -61,33 +67,50 @@ public class FruitResource {
     public RestResponse<Void> save(@Valid FruitPOST fruit, @Context UriInfo uriInfo) {
         var id = this.jdbc.query()
                 .update(App.Queries.INSERT_FRUIT)
-//                .params(UUID.randomUUID(), fruit.name(), fruit.type(), fruit.calories(), fruit.carbohydrates(), fruit.fiber(), fruit.sugars(), fruit.fat(), fruit.protein())
-                .params(paramsFromDto(fruit, UUID.randomUUID()))
+                .params(UUID.randomUUID(), fruit.name(), fruit.type(), fruit.calories(), fruit.carbohydrates(), fruit.fiber(), fruit.sugars(), fruit.fat(), fruit.protein())
                 .runFetchGenKeys(Mappers.singleLong())
                 .firstKey();
 
         return RestResponse.created(uriInfo.getAbsolutePathBuilder().path(id.get().toString()).build());
     }
 
-    @PUT
-    public RestResponse<Void> update(@Valid FruitPUT fruit) {
-        // dynamically create update stmt, by checking the provided params
-        var params = new LinkedHashMap<String, Object[]>();
-        addParamIfNotNull(params, new Statement("name", fruit.name()));
-        addParamIfNotNull(params, new Statement("type", fruit.type()));
-        addParamIfNotNull(params, new Statement("calories", fruit.calories()));
-        addParamIfNotNull(params, new Statement("carbohydrates", fruit.carbohydrates()));
-        addParamIfNotNull(params, new Statement("fiber", fruit.fiber()));
-        addParamIfNotNull(params, new Statement("sugars", fruit.sugars()));
-        addParamIfNotNull(params, new Statement("fat", fruit.fat()));
-        addParamIfNotNull(params, new Statement("protein", fruit.protein()));
+    @GET
+    @Path("/search")
+    public List<Fruit> search(@BeanParam @Valid SearchCriteria criteria) {
+        // dynamic search with operators, e.g. : where calories < 200 and fiber > 50 etc.
+        var queryResult = new DynamicQuery()
+                .selectClauses(
+                        "lower(name) = lower(?)",
+                        "lower(type) = lower(?)",
+                        "calories %s ?".formatted(criteria.calOp().orElse(EQ).value),
+                        "carbohydrates %s ?".formatted(criteria.carbOp().orElse(EQ).value),
+                        "fiber %s ?".formatted(criteria.fibOp().orElse(EQ).value),
+                        "sugars %s ?".formatted(criteria.sugOp().orElse(EQ).value),
+                        "fat %s ?".formatted(criteria.fatOp().orElse(EQ).value),
+                        "protein %s ?".formatted(criteria.protOp().orElse(EQ).value)
+                )
+                .paramsFromDto(criteria, name -> !name.contains("Op"))
+                .build();
 
-        var query = toQuery(params, ", ");
-        var values = toParams(params, fruit.id());
+        return this.jdbc.query()
+                .select("select * from fruit %s order by id".formatted(queryResult.query()))
+                .params(queryResult.parameters())
+                .listResult(fruitMapper);
+    }
+
+    @PUT
+    @Path("/{id}")
+    public RestResponse<Void> update(@RestPath @Min(1) Long id, @Valid FruitPUT fruit) {
+        // will create a dynamic query by checking the provided params: set name = ?, type = ?, ... where id = ?
+        var queryResult = new DynamicQuery()
+                .updateClauses("name", "type", "calories", "carbohydrates", "fiber", "sugars", "fat", "protein")
+                .where("id")
+                .paramsFromDto(fruit, id)
+                .build();
 
         var count = this.jdbc.query()
-                .update("update fruit set %s where id = ?".formatted(query))
-                .params(values)
+                .update("update fruit %s".formatted(queryResult.query()))
+                .params(queryResult.parameters())
                 .run()
                 .affectedRows();
 
@@ -99,52 +122,31 @@ public class FruitResource {
     }
 
     @GET
-    @Path("/search")
-    public List<Fruit> search(@BeanParam @Valid SearchCriteria criteria) {
-        // dynamic search with operators, e.g. : where calories < 200 and fiber > 50 etc.
-        var params = new LinkedHashMap<String, Object[]>();
-        addParamIfNotNull(params, new Statement("lower(name) = lower(?)", criteria.name()));
-        addParamIfNotNull(params, new Statement("lower(type) = lower(?)", criteria.type()));
-        addParamIfNotNull(params, new Statement("calories %s ?".formatted(criteria.calOp().orElse(EQ).value), criteria.calories()));
-        addParamIfNotNull(params, new Statement("carbohydrates %s ?".formatted(criteria.carbOp().orElse(EQ).value), criteria.carbohydrates()));
-        addParamIfNotNull(params, new Statement("fiber %s ?".formatted(criteria.fibOp().orElse(EQ).value), criteria.fiber()));
-        addParamIfNotNull(params, new Statement("sugars %s ?".formatted(criteria.sugOp().orElse(EQ).value), criteria.sugars()));
-        addParamIfNotNull(params, new Statement("fat %s ?".formatted(criteria.fatOp().orElse(EQ).value), criteria.fat()));
-        addParamIfNotNull(params, new Statement("protein %s ?".formatted(criteria.protOp().orElse(EQ).value), criteria.protein()));
-
-        var query = toQuery(params, " and ");
-        var values = toParams(params);
-
-        return this.jdbc.query()
-                .select("select %s from fruit where %s".formatted(App.Mappers.fruitMapper.columnNames(), query))
-                .params(values)
-                .listResult(App.Mappers.fruitMapper);
-    }
-
-    @GET
     public List<Fruit> findAll(@RestQuery @DefaultValue("0") @Min(0) int start, @RestQuery @Min(1) @Max(100) @DefaultValue("50") long size) {
         return this.jdbc.query()
-                .select("select %s from fruit where id > ? order by id".formatted(App.Mappers.fruitMapper.columnNames()))
+                .select("select %s from fruit where id > ? order by id".formatted(fruitMapper.columnNames()))
                 .params(start)
                 .maxRows(size)
-                .listResult(App.Mappers.fruitMapper);
+                .listResult(fruitMapper);
     }
 
+    // with jsonb
     @GET
     @Path("/farmers")
     public List<Farmer> findAllFarmers() {
         return this.jdbc.query()
                 .select(App.Queries.SELECT_FARMER)
                 .maxRows(50L)
-                .listResult(App.Mappers.farmerMapper);
+                .listResult(Farmer::fromRow);
     }
 
+    // with jsonb
     @POST
     @Path("/farmers")
-    public RestResponse<Void> addFarmer(@Valid FarmerPOST farmer, @Context UriInfo uriInfo) {
+    public RestResponse<Void> addFarmer(@Valid FarmerPOST farmer, @Context UriInfo uriInfo) throws SQLException {
         var id = this.jdbc.query()
                 .update(App.Queries.INSERT_FARMER)
-                .params(farmer.name(), farmer.city())
+                .params(farmer.name(), farmer.city(), JsonArray.of(farmer.certificates()).encode())
                 .runFetchGenKeys(Mappers.singleLong())
                 .firstKey();
 
@@ -169,11 +171,11 @@ public class FruitResource {
 
     @GET
     @Path("/farmers/fruits")
-    public List<Fruit> findAllFruitFarmers() {
+    public List<JsonObject> findAllFruitFarmers() {
         return this.jdbc.query()
                 .select(App.Queries.SELECT_FRUIT_FARMER_AMOUNTS)
                 .maxRows(50L)
-                .listResult(App.Mappers.fruitMapper);
+                .listResult(this.jsonObjectMapper);
     }
 
     @GET
@@ -183,14 +185,20 @@ public class FruitResource {
                 .select(App.Queries.FRUIT_REPORT)
                 .maxRows(50L)
                 .listResult(Mappers.map());
-        // or use the JsonObject mapper
-//                .listResult(this.jsonObjectMapper);
-
     }
 
     @GET
     @Path("/export")
     @Produces("text/csv")
+    @Operation(summary = "Export fruits as CSV", description = "Exports the list of fruits as a CSV file.")
+    @APIResponse(
+            responseCode = "200",
+            description = "A CSV file containing fruit data",
+            content = @Content(
+                    mediaType = "text/csv",
+                    schema = @Schema(type = STRING, format = "binary")
+            )
+    )
     public Response export() {
         StreamingOutput stream = out -> this.jdbc.query().plainConnection(con -> {
             try {
@@ -200,55 +208,9 @@ public class FruitResource {
             }
         });
 
-        var date = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
+        var date = LocalDateTime.now().format(App.DATE_FORMATTER);
         return Response.ok(stream)
                 .header(CONTENT_DISPOSITION, "attachment; filename=\"fruits_export_%s.csv\"".formatted(date))
                 .build();
-    }
-
-    private String toQuery(LinkedHashMap<String, Object[]> params, String operator) {
-        var result = params.keySet()
-                .stream()
-                .map(stmt -> {
-                    if (!stmt.contains("?")) {
-                        return "%s = ?".formatted(stmt);
-                    }
-                    return stmt;
-                })
-                .collect(Collectors.joining(operator));
-
-        Log.debugf("Built query: %s", result);
-        return result;
-    }
-
-    private void addParamIfNotNull(LinkedHashMap<String, Object[]> params, Statement stmt) {
-        if (stmt.values() != null) {
-            for (Object val : stmt.values()) {
-                if (val != null && !val.toString().isBlank()) {
-                    params.put(stmt.stmt(), stmt.values());
-                    break;
-                }
-            }
-        }
-    }
-
-    private Object[] toParams(LinkedHashMap<String, Object[]> params, Object... otherParams) {
-        return Stream.concat(
-                params.values().stream().flatMap(Arrays::stream),
-                Stream.of(otherParams)
-        ).toArray();
-    }
-
-    private static List<Object> paramsFromDto(Object dto, Object... otherParams) {
-        var result = new ArrayList();
-        Collections.addAll(result, otherParams);
-
-        // shorthand for getting all params, handy if you have a large object
-        var dtoParams = JsonObject.mapFrom(dto).stream().map(Map.Entry::getValue).toList();
-        result.addAll(dtoParams);
-        return result;
-    }
-
-    public record Statement(String stmt, Object... values) {
     }
 }

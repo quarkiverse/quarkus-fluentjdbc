@@ -48,6 +48,9 @@
             <column name="city" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
+            <column name="certificates" type="jsonb">
+                <constraints nullable="true"/>
+            </column>
         </createTable>
 
         <createTable tableName="fruit_farmer">

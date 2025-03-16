@@ -1,19 +1,21 @@
 package com.acme.fluentjdbc;
 
-import com.acme.fluentjdbc.config.RecordMapper;
-import com.acme.fluentjdbc.controller.dto.Farmer;
 import com.acme.fluentjdbc.controller.dto.Fruit;
+import io.quarkiverse.fluentjdbc.runtime.RecordMapper;
+
+import java.time.format.DateTimeFormatter;
 
 public class App {
 
+    public static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
+
     public static class Mappers {
         public static final RecordMapper fruitMapper = new RecordMapper(Fruit.class);
-        public static final RecordMapper farmerMapper = new RecordMapper(Farmer.class);
     }
 
     public static class Queries {
         public static final String INSERT_FRUIT = "insert into fruit(ext_id,name,type,calories,carbohydrates,fiber,sugars,fat,protein) values(?,?,?,?,?,?,?,?,?)";
-        public static final String INSERT_FARMER = "insert into farmer(name, city) values(?, ?)";
+        public static final String INSERT_FARMER = "insert into farmer(name, city, certificates) values(?,?, ?::jsonb)";
         public static final String INSERT_FRUIT_FARMER = "insert into fruit_farmer(farmer_id, fruit_id, amount) values(?,?,?)";
 
         public static final String SELECT_FARMER = "select * from farmer";
