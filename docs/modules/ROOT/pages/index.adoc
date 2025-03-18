@@ -38,9 +38,9 @@ Define your datasource:
 [source,properties,subs=attributes+]
 ----
 quarkus.datasource.db-kind=postgresql
-%prod.quarkus.datasource.jdbc.url=jdbc://postgresql://your-pg-cluster:5432
-%prod.quarkus.datasource.jdbc.username=username
-%prod.quarkus.datasource.jdbc.password=password
+%prod.quarkus.datasource.jdbc.url=jdbc:postgresql://localhost:5432/fruits
+%prod.quarkus.datasource.username=sa
+%prod.quarkus.datasource.password=sa
 
 quarkus.datasource.devservices.port=5431
 ----
