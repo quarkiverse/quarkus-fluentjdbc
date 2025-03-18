@@ -31,10 +31,6 @@ import jakarta.ws.rs.core.StreamingOutput;
 import jakarta.ws.rs.core.UriInfo;
 import org.codejargon.fluentjdbc.api.FluentJdbc;
 import org.codejargon.fluentjdbc.api.mapper.Mappers;
-import org.eclipse.microprofile.openapi.annotations.Operation;
-import org.eclipse.microprofile.openapi.annotations.media.Content;
-import org.eclipse.microprofile.openapi.annotations.media.Schema;
-import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.jboss.resteasy.reactive.RestPath;
 import org.jboss.resteasy.reactive.RestQuery;
 import org.jboss.resteasy.reactive.RestResponse;
@@ -42,7 +38,6 @@ import org.postgresql.copy.CopyManager;
 import org.postgresql.jdbc.PgConnection;
 
 import java.io.IOException;
-import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -51,7 +46,6 @@ import java.util.UUID;
 import static com.acme.fluentjdbc.App.Mappers.fruitMapper;
 import static com.acme.fluentjdbc.controller.dto.SearchCriteria.Operator.EQ;
 import static jakarta.ws.rs.core.HttpHeaders.CONTENT_DISPOSITION;
-import static org.eclipse.microprofile.openapi.annotations.enums.SchemaType.STRING;
 
 
 @Path("/fruits")
@@ -143,7 +137,7 @@ public class FruitResource {
     // with jsonb
     @POST
     @Path("/farmers")
-    public RestResponse<Void> addFarmer(@Valid FarmerPOST farmer, @Context UriInfo uriInfo) throws SQLException {
+    public RestResponse<Void> addFarmer(@Valid FarmerPOST farmer, @Context UriInfo uriInfo) {
         var id = this.jdbc.query()
                 .update(App.Queries.INSERT_FARMER)
                 .params(farmer.name(), farmer.city(), JsonArray.of(farmer.certificates()).encode())
@@ -190,15 +184,6 @@ public class FruitResource {
     @GET
     @Path("/export")
     @Produces("text/csv")
-    @Operation(summary = "Export fruits as CSV", description = "Exports the list of fruits as a CSV file.")
-    @APIResponse(
-            responseCode = "200",
-            description = "A CSV file containing fruit data",
-            content = @Content(
-                    mediaType = "text/csv",
-                    schema = @Schema(type = STRING, format = "binary")
-            )
-    )
     public Response export() {
         StreamingOutput stream = out -> this.jdbc.query().plainConnection(con -> {
             try {

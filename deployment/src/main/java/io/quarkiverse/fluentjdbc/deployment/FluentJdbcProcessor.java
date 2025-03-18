@@ -7,7 +7,6 @@ import jakarta.inject.Singleton;
 import org.codejargon.fluentjdbc.api.FluentJdbc;
 import org.codejargon.fluentjdbc.api.ParamSetter;
 
-import io.quarkiverse.fluentjdbc.runtime.FluentJdbcConfig;
 import io.quarkiverse.fluentjdbc.runtime.FluentJdbcRecorder;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
@@ -15,7 +14,6 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 
 public class FluentJdbcProcessor {
 
@@ -25,13 +23,10 @@ public class FluentJdbcProcessor {
     }
 
     @BuildStep
-    RuntimeInitializedClassBuildItem registerConfigForRuntime() {
-        return new RuntimeInitializedClassBuildItem(FluentJdbcConfig.class.getName());
-    }
-
-    @BuildStep
     ReflectiveClassBuildItem registerForReflection() {
-        return ReflectiveClassBuildItem.builder(FluentJdbcConfig.class).build();
+        return ReflectiveClassBuildItem.builder(
+                "io.quarkiverse.fluentjdbc.runtime.FluentJdbcConfig",
+                "io.quarkiverse.fluentjdbc.runtime.FluentJdbcConfig$$CMImpl").build();
     }
 
     @BuildStep

@@ -18,10 +18,25 @@ import java.util.regex.Pattern;
 import io.quarkus.runtime.annotations.RegisterForReflection;
 import io.vertx.core.json.JsonObject;
 
+/**
+ * <p>
+ * A helper class to produce dynamic queries which adds clauses to the query when the clauses are not null.
+ * </p>
+ *
+ * <p>
+ * Example: <br/>
+ * <code>
+ * - name = :name => with name null, </br>
+ * - age > :age => age = 18 </br>
+ * </code>
+ * <p>
+ * Will produce the following query: <code>where age > :age</code>
+ * </p>
+ */
 @RegisterForReflection
 public class DynamicQuery {
-    // e.g. just "name" without ":name"
-    private static final String UNNAMED_CLAUSE = "\\w+\\s*\\??";
+    // e.g. just "name" without " = :name"
+    private static final String UNNAMED_CLAUSE = "\\w+\\s*$";
     private static final Pattern CLAUSE_PATTERN = Pattern.compile("^(.*?)\\s*$");
 
     protected final List<Object> parameters = new ArrayList<>();
@@ -48,6 +63,14 @@ public class DynamicQuery {
         return paramsFromDto(dto, true, otherParams);
     }
 
+    /**
+     * Reads the values from the given DTO.
+     *
+     * @param dto the DTO
+     * @param nameFilter the parameters to be ex- or included by checking the name of a field in the DTO.
+     * @param otherParams additional parameters that need to be used. These will be added after the parameters of the DTO.
+     * @return a list of parameters from the DTO plus the additional parameters
+     */
     public DynamicQuery paramsFromDto(Object dto, Predicate<String> nameFilter, Object... otherParams) {
         this.parameters.clear();
         var dtoParams = JsonObject.mapFrom(dto).stream()
@@ -60,6 +83,17 @@ public class DynamicQuery {
         return this;
     }
 
+    /**
+     * The naming of the parameters.
+     * <ul>
+     * <li>numbered: <code>name = ?1 and age > ?2</code>
+     * <li>unnumbered: <code>name = ? and age > ?</code>
+     * <li>named: <code>name = :age and age > :age</code>
+     * </ul>
+     *
+     * @param paramNamer
+     * @return
+     */
     public DynamicQuery paramNamer(QueryParamNamer paramNamer) {
         this.paramNamer = paramNamer;
         return this;
@@ -91,8 +125,8 @@ public class DynamicQuery {
         var validExpressions = new ArrayList<>();
         var paramIndex = 0;
 
-        for (var expr : clauses) {
-            var matcher = CLAUSE_PATTERN.matcher(expr);
+        for (var clause : clauses) {
+            var matcher = CLAUSE_PATTERN.matcher(clause);
             while (matcher.find()) {
                 var expression = matcher.group(1).trim();
                 var validationResult = validateParams(expression, paramIndex);

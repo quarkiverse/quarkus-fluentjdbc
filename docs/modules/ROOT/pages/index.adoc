@@ -8,12 +8,13 @@ Furthermore, it adds the following enhancements to it:
 
 - a `RecordMapper` class which can be used to map query results into Java Records,
 - a `JsonObjectMapper` which can be used to map queries into the `JsonObject` that comes with Quarkus.
+- a `DynamicQuery` class for writing conditional queries.
 
 == Installation
 
 If you want to use this extension, you need to add the `io.quarkiverse.fluentjdbc:quarkus-fluentjdbc` extension first to your build file.
 
-For instance, with Maven, add the following dependency to your POM file:
+For instance, with Maven, add the following dependencies to your POM file:
 
 [source,xml,subs=attributes+]
 ----
@@ -22,6 +23,12 @@ For instance, with Maven, add the following dependency to your POM file:
     <artifactId>quarkus-fluentjdbc</artifactId>
     <version>{project-version}</version>
 </dependency>
+
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-jdbc-postgresql</artifactId>
+</dependency>
+
 ----
 
 == Usage
@@ -65,7 +72,7 @@ public class FruitResource {
 }
 ----
 
-The `RecordMapper` maps `ResultSets` into Java Records. It will also automatically map the database column name into camel case in Java.
+The `RecordMapper` maps `ResultSets` into Java Records. It will also automatically map the database column names into camel case in Java.
 
 So if you have "external_id" in the database, this will be automatically mapped to "externalId".
 
@@ -74,7 +81,7 @@ Define the Fruit DTO:
 [source,java,subs=attributes+]
 ----
 public record Fruit(
-        int id,
+        Long id,
         UUID externalId,
         String name,
         String type,
@@ -143,7 +150,7 @@ Note: you need to create a producer (`@Produce`) for the `ObjectMappers`.
 
 === Dynamic Queries
 
-If you need to create dynamic queries where certain parameters can be empty, then you use `DynamicQuery` as follows:
+If you need to create dynamic queries where certain parameters can be empty, then you can use `DynamicQuery` as follows:
 
 ```java
     @GET
@@ -195,7 +202,6 @@ You can also use it to create dynamic update statements:
 ```
 
 For more examples, see links below.
--
 
 [[extension-configuration-reference]]
 == Extension Configuration Reference
