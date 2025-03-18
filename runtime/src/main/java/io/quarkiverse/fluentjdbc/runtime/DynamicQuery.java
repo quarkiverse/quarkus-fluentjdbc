@@ -151,6 +151,14 @@ public class DynamicQuery {
         };
     }
 
+    private String nameExpression(String expression, AtomicInteger paramCounter) {
+        return switch (this.paramNamer) {
+            case NAMED -> "%s = %s%s".formatted(expression, this.paramNamer.param, expression);
+            case NUMBERED -> "%s = ?%d".formatted(expression, paramCounter.getAndIncrement());
+            case UNNUMBERED -> "%s = %s".formatted(expression, this.paramNamer.param);
+        };
+    }
+
     private void removeNullParams(int paramIndex, int times) {
         for (int i = 0; i < times; i++) {
             this.parameters.remove(paramIndex);
@@ -168,14 +176,6 @@ public class DynamicQuery {
         }
 
         return new ValidParamResult(isValid, max(1, paramCounter));
-    }
-
-    private String nameExpression(String expression, AtomicInteger paramCounter) {
-        return switch (this.paramNamer) {
-            case NAMED -> "%s = %s%s".formatted(expression, this.paramNamer.param, expression);
-            case NUMBERED -> "%s = ?%d".formatted(expression, paramCounter.getAndIncrement());
-            case UNNUMBERED -> "%s = %s".formatted(expression, this.paramNamer.param);
-        };
     }
 
     private static String replaceParams(String expression, String replacement) {
