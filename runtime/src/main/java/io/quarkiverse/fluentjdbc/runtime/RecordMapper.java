@@ -8,7 +8,9 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Parameter;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.OffsetDateTime;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -102,11 +104,30 @@ public class RecordMapper<T extends Record> implements Mapper<T> {
                     case "java.lang.String" -> rs.getString(columnIndex);
                     case "java.lang.Long" -> rs.getLong(columnIndex);
                     case "java.lang.Integer" -> rs.getInt(columnIndex);
+                    case "java.lang.Double" -> rs.getDouble(columnIndex);
                     case "java.lang.Boolean" -> rs.getBoolean(columnIndex);
                     case "double" -> rs.getDouble(columnIndex);
                     case "int" -> rs.getInt(columnIndex);
                     case "boolean" -> rs.getBoolean(columnIndex);
                     case "java.math.BigDecimal" -> rs.getBigDecimal(columnIndex);
+                    case "java.time.LocalDate" -> rs.getDate(columnIndex).toLocalDate();
+                    case "java.time.LocalDateTime" -> rs.getTimestamp(columnIndex).toLocalDateTime();
+                    case "java.time.LocalTime" -> rs.getTime(columnIndex).toLocalTime();
+                    case "java.time.OffsetDateTime" -> rs.getObject(columnIndex, OffsetDateTime.class);
+                    case "java.sql.Date" -> rs.getDate(columnIndex);
+                    case "java.sql.Timestamp" -> rs.getTimestamp(columnIndex);
+                    case "java.util.Date" -> rs.getTimestamp(columnIndex);
+                    case "java.util.Calendar" -> {
+                        var calendar = Calendar.getInstance();
+                        calendar.setTime(rs.getTimestamp(columnIndex));
+                        yield calendar;
+                    }
+                    case "java.sql.Blob" -> rs.getBlob(columnIndex);
+                    case "java.sql.Clob" -> rs.getClob(columnIndex);
+                    case "java.sql.Array" -> rs.getArray(columnIndex);
+                    case "java.io.InputStream" -> rs.getBinaryStream(columnIndex);
+                    case "java.io.Reader" -> rs.getCharacterStream(columnIndex);
+                    case "java.sql.NClob" -> rs.getNClob(columnIndex);
                     default -> rs.getObject(columnIndex);
                 };
             } else {
