@@ -1,8 +1,8 @@
 package io.quarkiverse.fluentjdbc.runtime;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import org.junit.jupiter.api.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 class RecordMapperTest {
 
@@ -16,5 +16,4 @@ class RecordMapperTest {
 
     record Fruit(String extId, String name) {
     }
-
 }

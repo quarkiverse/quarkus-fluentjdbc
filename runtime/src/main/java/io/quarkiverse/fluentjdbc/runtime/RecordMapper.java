@@ -1,5 +1,8 @@
 package io.quarkiverse.fluentjdbc.runtime;
 
+import io.quarkus.runtime.annotations.RegisterForReflection;
+import org.codejargon.fluentjdbc.api.query.Mapper;
+
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Parameter;
@@ -9,10 +12,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import org.codejargon.fluentjdbc.api.query.Mapper;
-
-import io.quarkus.runtime.annotations.RegisterForReflection;
 
 /**
  * A Java Record mapper for FluentJdbc.
@@ -85,7 +84,7 @@ public class RecordMapper<T extends Record> implements Mapper<T> {
         var columnNameToIndex = new HashMap<String, Integer>();
 
         for (int i = 1; i <= columnCount; i++) {
-            var dbColumnName = resultSetMetaData.getColumnName(i).toLowerCase();
+            var dbColumnName = resultSetMetaData.getColumnName(i);
             if (this.dbColumnNameToCamelCase) {
                 columnNameToIndex.put(toCamelCase(dbColumnName), i);
             } else {
