@@ -97,7 +97,6 @@ public class RecordMapper<T extends Record> implements Mapper<T> {
             var parameterName = parameterNames[i].getName();
             if (columnNameToIndex.containsKey(parameterName)) {
                 var columnIndex = columnNameToIndex.get(parameterName);
-                System.out.println("param type: " + parameterTypes[i].getName());
 
                 params[i] = switch (parameterTypes[i].getName()) {
                     case "java.lang.String" -> rs.getString(columnIndex);
