@@ -1,7 +1,6 @@
 package com.acme.fluentjdbc.config;
 
 import io.quarkus.logging.Log;
-import io.quarkus.security.AuthenticationFailedException;
 import jakarta.ws.rs.WebApplicationException;
 import org.codejargon.fluentjdbc.api.FluentJdbcException;
 import org.jboss.resteasy.reactive.RestResponse;
@@ -12,7 +11,6 @@ import java.util.Objects;
 
 import static org.jboss.resteasy.reactive.RestResponse.Status.BAD_REQUEST;
 import static org.jboss.resteasy.reactive.RestResponse.Status.INTERNAL_SERVER_ERROR;
-import static org.jboss.resteasy.reactive.RestResponse.Status.UNAUTHORIZED;
 
 public class ExceptionMapper {
 
@@ -51,14 +49,6 @@ public class ExceptionMapper {
         Log.error(message);
         return RestResponse.status(INTERNAL_SERVER_ERROR, Map.of(
                 "message", message,
-                "exception", e.getClass().getName()
-        ));
-    }
-
-    @ServerExceptionMapper
-    public RestResponse<Map<String, String>> toResponse(AuthenticationFailedException e) {
-        return RestResponse.status(UNAUTHORIZED, Map.of(
-                "message", "username and/or password incorrect",
                 "exception", e.getClass().getName()
         ));
     }
