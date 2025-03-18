@@ -14,7 +14,7 @@ The application will startup `fruit`, `farmer` and `fruit_farmer` tables with Li
 
 `fruit` has a many-to-many relationship with `farmer` via the `fruit_farmer` table.
 
-# Native Compilation (GraalVM)
+## Native Compilation (GraalVM)
 
 To compile the project into a native binary use:
 
