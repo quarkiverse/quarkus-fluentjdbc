@@ -1,7 +1,9 @@
 package io.quarkiverse.fluentjdbc.runtime;
 
-import io.quarkus.runtime.annotations.RegisterForReflection;
-import io.vertx.core.json.JsonObject;
+import static io.quarkiverse.fluentjdbc.runtime.QueryOperator.AND;
+import static io.quarkiverse.fluentjdbc.runtime.QueryOperator.COMMA;
+import static io.quarkiverse.fluentjdbc.runtime.QueryParamNamer.UNNUMBERED;
+import static java.lang.Math.max;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -13,10 +15,8 @@ import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
-import static io.quarkiverse.fluentjdbc.runtime.QueryOperator.AND;
-import static io.quarkiverse.fluentjdbc.runtime.QueryOperator.COMMA;
-import static io.quarkiverse.fluentjdbc.runtime.QueryParamNamer.UNNUMBERED;
-import static java.lang.Math.max;
+import io.quarkus.runtime.annotations.RegisterForReflection;
+import io.vertx.core.json.JsonObject;
 
 /**
  * <p>
@@ -66,8 +66,8 @@ public class DynamicQuery {
     /**
      * Reads the values from the given DTO.
      *
-     * @param dto         the DTO
-     * @param nameFilter  the parameters to be ex- or included by checking the name of a field in the DTO.
+     * @param dto the DTO
+     * @param nameFilter the parameters to be ex- or included by checking the name of a field in the DTO.
      * @param otherParams additional parameters that need to be used. These will be added after the parameters of the DTO.
      * @return a list of parameters from the DTO plus the additional parameters
      */
