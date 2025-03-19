@@ -1,8 +1,5 @@
 package io.quarkiverse.fluentjdbc.runtime;
 
-import io.quarkus.runtime.annotations.RegisterForReflection;
-import org.codejargon.fluentjdbc.api.query.Mapper;
-
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Parameter;
@@ -14,6 +11,10 @@ import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import org.codejargon.fluentjdbc.api.query.Mapper;
+
+import io.quarkus.runtime.annotations.RegisterForReflection;
 
 /**
  * A Java Record mapper for FluentJdbc.
