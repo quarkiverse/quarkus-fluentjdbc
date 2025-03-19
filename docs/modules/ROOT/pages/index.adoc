@@ -270,5 +270,5 @@ The easiest way to configure these are by exposing them as CDI beans:
 -- More information:
 
 - [Official FluentJdbc documenation](https://zsoltherpai.github.io/fluent-jdbc)
-- [More Examples](https://github.com/Serkan80/quarkus-fluentjdbc-extension/tree/master/examples)
+- [More Examples](https://github.com/quarkiverse/quarkus-fluentjdbc/tree/main/examples)
 
