@@ -8,6 +8,7 @@ import java.sql.SQLException;
 
 public record Farmer(Long id, String name, String city, String[] certificates) {
 
+    // example of manual mapping
     public static Farmer fromRow(ResultSet row) {
         try {
             return new Farmer(

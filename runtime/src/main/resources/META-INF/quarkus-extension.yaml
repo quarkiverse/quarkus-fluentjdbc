@@ -1,12 +1,14 @@
 name: FluentJdbc
 description: a fluent API around JDBC for querying SQL databases.
+group-id: io.quarkiverse.fluentjdbc
+artifact-id: quarkus-fluentjdbc
 metadata:
   keywords:
     - fluentjdbc
     - jdbc
     - sql
     - database
-  guide: https://docs.quarkiverse.io/fluentjdbc/dev/ # To create and publish this guide, see https://github.com/quarkiverse/quarkiverse/wiki#documenting-your-extension
+  guide: https://docs.quarkiverse.io/fluentjdbc/dev/
   categories:
     - "data"
   status: "preview"

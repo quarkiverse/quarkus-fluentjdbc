@@ -17,6 +17,7 @@ import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Size;
 import jakarta.ws.rs.BeanParam;
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
@@ -31,6 +32,7 @@ import jakarta.ws.rs.core.StreamingOutput;
 import jakarta.ws.rs.core.UriInfo;
 import org.codejargon.fluentjdbc.api.FluentJdbc;
 import org.codejargon.fluentjdbc.api.mapper.Mappers;
+import org.codejargon.fluentjdbc.api.query.UpdateResult;
 import org.jboss.resteasy.reactive.RestPath;
 import org.jboss.resteasy.reactive.RestQuery;
 import org.jboss.resteasy.reactive.RestResponse;
@@ -39,9 +41,11 @@ import org.postgresql.jdbc.PgConnection;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import static com.acme.fluentjdbc.App.Mappers.fruitMapper;
 import static com.acme.fluentjdbc.controller.dto.SearchCriteria.Operator.EQ;
@@ -68,6 +72,41 @@ public class FruitResource {
         return RestResponse.created(uriInfo.getAbsolutePathBuilder().path(id.get().toString()).build());
     }
 
+    @POST
+    @Path("/batch")
+    public RestResponse<Void> saveAll(@Valid @Size(min = 1, max = 100) List<FruitPOST> fruits) {
+        Stream<List<?>> params = fruits.stream()
+                .map(fruit -> {
+                    var res = new ArrayList();
+                    res.add(UUID.randomUUID());
+                    res.add(fruit.name());
+                    res.add(fruit.type());
+                    res.add(fruit.calories());
+                    res.add(fruit.carbohydrates());
+                    res.add(fruit.fiber());
+                    res.add(fruit.sugars());
+                    res.add(fruit.fat());
+                    res.add(fruit.protein());
+                    return res;
+
+                    // or shorthand:
+//                    var result = new LinkedHashMap<String, Object>();
+//                    result.put("extId", UUID.randomUUID());
+//                    result.putAll(JsonObject.mapFrom(fruit).getMap());
+//                    return new ArrayList<>(result.values());
+                });
+
+        var count = this.jdbc.query()
+                .batch(App.Queries.INSERT_FRUIT)
+                .params(params)
+                .batchSize(100)
+                .runFetchGenKeys(Mappers.singleLong())
+                .stream().mapToLong(UpdateResult::affectedRows).sum();
+
+        Log.infof("%d fruits created", count);
+        return RestResponse.ok();
+    }
+
     @GET
     @Path("/search")
     public List<Fruit> search(@BeanParam @Valid SearchCriteria criteria) {
@@ -81,8 +120,7 @@ public class FruitResource {
                         "fiber %s ?".formatted(criteria.fibOp().orElse(EQ).value),
                         "sugars %s ?".formatted(criteria.sugOp().orElse(EQ).value),
                         "fat %s ?".formatted(criteria.fatOp().orElse(EQ).value),
-                        "protein %s ?".formatted(criteria.protOp().orElse(EQ).value)
-                )
+                        "protein %s ?".formatted(criteria.protOp().orElse(EQ).value))
                 .paramsFromDto(criteria, name -> !name.contains("Op"))
                 .build();
 
