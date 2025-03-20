@@ -1,18 +1,17 @@
 package com.acme.fluentjdbc.controller;
 
-import com.acme.fluentjdbc.App;
-import com.acme.fluentjdbc.controller.dto.AddFruitPOST;
-import com.acme.fluentjdbc.controller.dto.Farmer;
-import com.acme.fluentjdbc.controller.dto.FarmerPOST;
-import com.acme.fluentjdbc.controller.dto.Fruit;
-import com.acme.fluentjdbc.controller.dto.FruitPOST;
-import com.acme.fluentjdbc.controller.dto.FruitPUT;
-import com.acme.fluentjdbc.controller.dto.SearchCriteria;
-import io.quarkiverse.fluentjdbc.runtime.DynamicQuery;
-import io.quarkiverse.fluentjdbc.runtime.JsonObjectMapper;
-import io.quarkus.logging.Log;
-import io.vertx.core.json.JsonArray;
-import io.vertx.core.json.JsonObject;
+import static com.acme.fluentjdbc.App.Mappers.fruitMapper;
+import static com.acme.fluentjdbc.controller.dto.SearchCriteria.Operator.EQ;
+import static jakarta.ws.rs.core.HttpHeaders.CONTENT_DISPOSITION;
+
+import java.io.IOException;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.stream.Stream;
+
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
@@ -30,6 +29,7 @@ import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.StreamingOutput;
 import jakarta.ws.rs.core.UriInfo;
+
 import org.codejargon.fluentjdbc.api.FluentJdbc;
 import org.codejargon.fluentjdbc.api.mapper.Mappers;
 import org.codejargon.fluentjdbc.api.query.UpdateResult;
@@ -39,18 +39,20 @@ import org.jboss.resteasy.reactive.RestResponse;
 import org.postgresql.copy.CopyManager;
 import org.postgresql.jdbc.PgConnection;
 
-import java.io.IOException;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.stream.Stream;
+import com.acme.fluentjdbc.App;
+import com.acme.fluentjdbc.controller.dto.AddFruitPOST;
+import com.acme.fluentjdbc.controller.dto.Farmer;
+import com.acme.fluentjdbc.controller.dto.FarmerPOST;
+import com.acme.fluentjdbc.controller.dto.Fruit;
+import com.acme.fluentjdbc.controller.dto.FruitPOST;
+import com.acme.fluentjdbc.controller.dto.FruitPUT;
+import com.acme.fluentjdbc.controller.dto.SearchCriteria;
 
-import static com.acme.fluentjdbc.App.Mappers.fruitMapper;
-import static com.acme.fluentjdbc.controller.dto.SearchCriteria.Operator.EQ;
-import static jakarta.ws.rs.core.HttpHeaders.CONTENT_DISPOSITION;
-
+import io.quarkiverse.fluentjdbc.runtime.DynamicQuery;
+import io.quarkiverse.fluentjdbc.runtime.JsonObjectMapper;
+import io.quarkus.logging.Log;
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
 
 @Path("/fruits")
 public class FruitResource {
@@ -65,7 +67,8 @@ public class FruitResource {
     public RestResponse<Void> save(@Valid FruitPOST fruit, @Context UriInfo uriInfo) {
         var id = this.jdbc.query()
                 .update(App.Queries.INSERT_FRUIT)
-                .params(UUID.randomUUID(), fruit.name(), fruit.type(), fruit.calories(), fruit.carbohydrates(), fruit.fiber(), fruit.sugars(), fruit.fat(), fruit.protein())
+                .params(UUID.randomUUID(), fruit.name(), fruit.type(), fruit.calories(), fruit.carbohydrates(), fruit.fiber(),
+                        fruit.sugars(), fruit.fat(), fruit.protein())
                 .runFetchGenKeys(Mappers.singleLong())
                 .firstKey();
 
@@ -90,10 +93,10 @@ public class FruitResource {
                     return res;
 
                     // or shorthand:
-//                    var result = new LinkedHashMap<String, Object>();
-//                    result.put("extId", UUID.randomUUID());
-//                    result.putAll(JsonObject.mapFrom(fruit).getMap());
-//                    return new ArrayList<>(result.values());
+                    //                    var result = new LinkedHashMap<String, Object>();
+                    //                    result.put("extId", UUID.randomUUID());
+                    //                    result.putAll(JsonObject.mapFrom(fruit).getMap());
+                    //                    return new ArrayList<>(result.values());
                 });
 
         var count = this.jdbc.query()
@@ -113,14 +116,14 @@ public class FruitResource {
         // dynamic search with operators, e.g. : where calories < 200 and fiber > 50 etc.
         var queryResult = new DynamicQuery()
                 .selectClauses(
-                        "lower(name) = lower(?)",
-                        "lower(type) = lower(?)",
-                        "calories %s ?".formatted(criteria.calOp().orElse(EQ).value),
-                        "carbohydrates %s ?".formatted(criteria.carbOp().orElse(EQ).value),
-                        "fiber %s ?".formatted(criteria.fibOp().orElse(EQ).value),
-                        "sugars %s ?".formatted(criteria.sugOp().orElse(EQ).value),
-                        "fat %s ?".formatted(criteria.fatOp().orElse(EQ).value),
-                        "protein %s ?".formatted(criteria.protOp().orElse(EQ).value))
+                        "lower(name) = lower(:name)",
+                        "lower(type) = lower(:type)",
+                        "calories %s :cal".formatted(criteria.calOp().orElse(EQ).value),
+                        "carbohydrates %s :carb".formatted(criteria.carbOp().orElse(EQ).value),
+                        "fiber %s :fib".formatted(criteria.fibOp().orElse(EQ).value),
+                        "sugars %s :sug".formatted(criteria.sugOp().orElse(EQ).value),
+                        "fat %s :fat".formatted(criteria.fatOp().orElse(EQ).value),
+                        "protein %s :prot".formatted(criteria.protOp().orElse(EQ).value))
                 .paramsFromDto(criteria, name -> !name.contains("Op"))
                 .build();
 
@@ -154,7 +157,8 @@ public class FruitResource {
     }
 
     @GET
-    public List<Fruit> findAll(@RestQuery @DefaultValue("0") @Min(0) int start, @RestQuery @Min(1) @Max(100) @DefaultValue("50") long size) {
+    public List<Fruit> findAll(@RestQuery @DefaultValue("0") @Min(0) int start,
+            @RestQuery @Min(1) @Max(100) @DefaultValue("50") long size) {
         return this.jdbc.query()
                 .select("select %s from fruit where id > ? order by id".formatted(fruitMapper.columnNames()))
                 .params(start)
