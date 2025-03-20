@@ -2,12 +2,12 @@
 
 include::./includes/attributes.adoc[]
 
-This extension integrates FluentJdbc with Quarkus by making use of Agroal as the connectionpool implementation.
+This extension integrates FluentJdbc with Quarkus by making use of Agroal as the default connection pool.
 
 Furthermore, it adds the following enhancements to it:
 
 - a `RecordMapper` class which can be used to map query results into Java Records,
-- a `JsonObjectMapper` which can be used to map queries into the `JsonObject` that comes with Quarkus.
+- a `JsonObjectMapper` which can be used to map queries into the `JsonObject` that comes with Quarkus,
 - a `DynamicQuery` class for writing conditional queries.
 
 == Installation
@@ -45,8 +45,6 @@ quarkus.datasource.db-kind=postgresql
 quarkus.datasource.devservices.port=5431
 ----
 
-The above configuration will also start Dev services with a PosgtreSql database on port 5431.
-
 Now you can use FluentJdbc as follows:
 
 [source,java,subs=attributes+]
@@ -72,9 +70,16 @@ public class FruitResource {
 }
 ----
 
-The `RecordMapper` maps `ResultSets` into Java Records. It will also automatically map the database column names into camel case in Java.
+The `RecordMapper` maps `ResultSets` into Java Records.It will also automatically map the database column names into camel case in Java.
 
 So if you have "external_id" in the database, this will be automatically mapped to "externalId".
+
+You can also disable this functionality:
+
+[source,java,subs=attributes+]
+----
+RecordMapper recordMapper = new RecordMapper(Fruit.class, false);
+----
 
 Define the Fruit DTO:
 
@@ -152,39 +157,46 @@ Note: you need to create a producer (`@Produce`) for the `ObjectMappers`.
 
 If you need to create dynamic queries where certain parameters can be empty, then you can use `DynamicQuery` as follows:
 
-```java
-    @GET
-    @Path("/search")
-    public List<Fruit> search(@BeanParam @Valid SearchCriteria criteria) {
-        var queryResult = new DynamicQuery()
+[source,java,subs=attributes+]
+----
+@GET
+@Path("/search")
+public List<Fruit> search(@BeanParam @Valid SearchCriteria criteria) {
+       var queryResult = new DynamicQuery()
                 .selectClauses(
-                        "lower(name) = lower(?)",
-                        "lower(type) = lower(?)",
-                        "calories",
-                        "carbohydrates"
+                        "lower(name) = lower(:name)", <1>
+                        "lower(type) = lower(:type)",
+                        "calories", <2>
+                        "carbohydrates" <2>
                 )
-                .paramsFromDto(criteria)
+                .paramsFromDto(criteria) <3>
                 .build();
 
         return this.jdbc.query()
                 .select("select * from fruit %s order by id".formatted(queryResult.query()))
                 .params(queryResult.parameters())
                 .listResult(fruitMapper);
-    }
-```
+}
+----
 
-`calories` and `carbohydrates` is a shorthand for: `calories = :calories` and `carbohydrates = :carbohydrates` respectively.
+<1> clause with a named parameter,
+<2> calories and carbohydrates is a shorthand for `calories = :calories`, `carbohydrates = :carbohydrates` respectively.
+<3> the parameters from the DTO will be read and only the non-null values will be returned
+
+Note that all clauses are optional.
+They are only evaluated when their corresponding parameters are not null.
 
 You can also use it to create dynamic update statements:
 
-```java
+[source,java,subs=attributes+]
+----
     @PUT
     @Path("/{id}")
     public RestResponse<Void> update(@RestPath @Min(1) Long id, @Valid FruitPUT fruit) {
         var queryResult = new DynamicQuery()
-                .updateClauses("name", "type", "calories", "carbohydrates", "fiber", "sugars", "fat", "protein")
-                .where("id")
-                .paramsFromDto(fruit, id)
+                .updateClauses("name", "type", "calories", "carbohydrates", "fiber", "sugars", "fat", "protein") <1>
+                .where("id") <1>
+                .paramsFromDto(fruit, id) <2>
                 .build();
 
         var count = this.jdbc.query()
@@ -199,7 +211,11 @@ You can also use it to create dynamic update statements:
 
         return RestResponse.ok();
     }
-```
+----
+
+<1> these are all again shorthand notations
+<2> this will first evaluate the values from the DTO, then add the `id` to the end.
+So that the parameters returned will start from: name till id.
 
 For more examples, see links below.
 
@@ -267,8 +283,8 @@ The easiest way to configure these are by exposing them as CDI beans:
     }
 ----
 
--- More information:
+== More information:
 
-- [Official FluentJdbc documenation](https://zsoltherpai.github.io/fluent-jdbc)
-- [More Examples](https://github.com/quarkiverse/quarkus-fluentjdbc/tree/main/examples)
+- link:https://zsoltherpai.github.io/fluent-jdbc[Official FluentJdbc Documenation]
+- link:https://github.com/quarkiverse/quarkus-fluentjdbc/tree/main/examples[More Examples]
 
