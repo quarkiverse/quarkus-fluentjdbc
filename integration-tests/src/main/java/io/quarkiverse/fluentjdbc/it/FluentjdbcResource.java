@@ -16,17 +16,25 @@
 */
 package io.quarkiverse.fluentjdbc.it;
 
-import jakarta.enterprise.context.ApplicationScoped;
+import static jakarta.ws.rs.core.MediaType.TEXT_PLAIN;
+
+import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+
+import org.codejargon.fluentjdbc.api.FluentJdbc;
+import org.codejargon.fluentjdbc.api.mapper.Mappers;
 
 @Path("/fluentjdbc")
-@ApplicationScoped
 public class FluentjdbcResource {
-    // add some rest methods here
+
+    @Inject
+    FluentJdbc jdbc;
 
     @GET
-    public String hello() {
-        return "Hello fluentjdbc";
+    @Produces(TEXT_PLAIN)
+    public Long checkDbStartup() {
+        return this.jdbc.query().select("select 1").singleResult(Mappers.singleLong());
     }
 }

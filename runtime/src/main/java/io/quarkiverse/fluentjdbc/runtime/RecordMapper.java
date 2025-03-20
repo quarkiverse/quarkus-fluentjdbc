@@ -123,12 +123,12 @@ public class RecordMapper<T extends Record> implements Mapper<T> {
                         calendar.setTime(rs.getTimestamp(columnIndex));
                         yield calendar;
                     }
+                    case "java.sql.Array" -> rs.getArray(columnIndex);
                     case "java.sql.Blob" -> rs.getBlob(columnIndex);
                     case "java.sql.Clob" -> rs.getClob(columnIndex);
-                    case "java.sql.Array" -> rs.getArray(columnIndex);
+                    case "java.sql.NClob" -> rs.getNClob(columnIndex);
                     case "java.io.InputStream" -> rs.getBinaryStream(columnIndex);
                     case "java.io.Reader" -> rs.getCharacterStream(columnIndex);
-                    case "java.sql.NClob" -> rs.getNClob(columnIndex);
                     default -> rs.getObject(columnIndex);
                 };
             } else {
