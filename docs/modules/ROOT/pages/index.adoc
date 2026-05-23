@@ -191,7 +191,7 @@ You can also use it to create dynamic update statements:
 [source,java,subs=attributes+]
 ----
     @PUT
-    @Path("/{id}")
+    @Path("/\{id\}")
     public RestResponse<Void> update(@RestPath @Min(1) Long id, @Valid FruitPUT fruit) {
         var queryResult = new DynamicQuery()
                 .updateClauses("name", "type", "calories", "carbohydrates", "fiber", "sugars", "fat", "protein") <1>
